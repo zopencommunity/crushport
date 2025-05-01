@@ -1,10 +1,10 @@
 # Update bump details accordingly. Use bump check to confirm.
-# bump: jd-version /JD_VERSION="(.*)"/ https://github.com/josephburnett/jd.git|semver:*
-JD_VERSION="2.2.2" # Specify a stable release
-# export ZOPEN_STABLE_TAG="v${JD_VERSION}"
+# bump: glow-version /GLOW_VERSION="(.*)"/ https://github.com/charmbracelet/glow.git|semver:*
+GLOW_VERSION="2.1.0" # Specify a stable release
+# export ZOPEN_STABLE_TAG="v${GLOW_VERSION}"
 
 ###
-### Build control file for the jd port
+### Build control file for the glow port
 ###
 
 ###
@@ -15,9 +15,9 @@ JD_VERSION="2.2.2" # Specify a stable release
 export ZOPEN_BUILD_LINE="STABLE"
 
 ## Required IF ZOPEN_BUILD_LINE='STABLE'
-export ZOPEN_STABLE_URL="https://github.com/josephburnett/jd.git"
-export ZOPEN_STABLE_DEPS="make coreutils" # Specify the stable build dependencies.
-export ZOPEN_STABLE_TAG="v${JD_VERSION}"
+export ZOPEN_STABLE_URL="https://github.com/charmbracelet/glow.git"
+export ZOPEN_STABLE_DEPS="make coreutils wharf" # Specify the stable build dependencies.
+export ZOPEN_STABLE_TAG="v${GLOW_VERSION}"
 
 ## Required IF ZOPEN_BUILD_LINE='DEV'
 export ZOPEN_DEV_URL=""   # Specify the dev build URL
@@ -25,7 +25,7 @@ export ZOPEN_DEV_DEPS=""  # Specify the dev build dependencies
 
 ## Specify a space-delimited list of applicable categories.
 ## See tool_categories.txt for valid options
-export ZOPEN_CATEGORIES="json utilities"
+export ZOPEN_CATEGORIES="documentation utilities"
 
 ## Runtime zopen tool dependencies to be installed alongside the tool.
 export ZOPEN_RUNTIME_DEPS=""
@@ -48,7 +48,7 @@ export ZOPEN_COMP="GO"
 #export ZOPEN_MAKE="skip"      ## Build program to run (defaults to 'make')
 #export ZOPEN_CLEAN=""         ## Clean up program to run (defaults to 'make')
 export ZOPEN_COMP=GO
-export ZOPEN_CONFIGURE="skip"
+export ZOPEN_CONFIGURE="zopen_wharf"
 export ZOPEN_MAKE="go"
 export ZOPEN_MAKE_OPTS="build"
 export ZOPEN_MAKE_MINIMAL="yes"
@@ -61,6 +61,18 @@ zopen_init()
   export CGO_ENABLED=0 # disable C Go as it's not needed in yq
 }
 
+
+zopen_wharf()
+{
+  cd ..
+  # TODO: there is an issue with wharf, patches applied manually
+  git clone https://github.com/atotto/clipboard.git && cd clipboard
+  git apply ../patches/zos.patch
+  cd ..
+
+  go work init ./glow ./clipboard
+  cd ./glow
+}
 
 ###
 ### Required user-supplied functions
@@ -82,14 +94,14 @@ zopen_check_results()
 zopen_install()
 {
   mkdir -p $ZOPEN_INSTALL_DIR/bin
-  cp  ./jd $ZOPEN_INSTALL_DIR/bin/
+  cp  ./glow $ZOPEN_INSTALL_DIR/bin/
 }
 
 zopen_get_version()
 {
   # Modify to echo the version of your tool/library
   # Rather than hardcoding the version, obtain the version by running the tool/library
-  echo "${JD_VERSION}"
+  echo "${GLOW_VERSION}"
 }
 
 

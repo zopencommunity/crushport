@@ -1,0 +1,13 @@
+diff --git i/clipboard_unix.go w/clipboard_unix.go
+index d9f6a56..d370d0e 100644
+--- i/clipboard_unix.go
++++ w/clipboard_unix.go
+@@ -2,7 +2,7 @@
+ // Use of this source code is governed by a BSD-style
+ // license that can be found in the LICENSE file.
+ 
+-// +build freebsd linux netbsd openbsd solaris dragonfly
++// +build freebsd linux netbsd openbsd solaris dragonfly zos
+ 
+ package clipboard
+ 
