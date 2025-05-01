@@ -67,7 +67,7 @@ zopen_wharf()
   cd ..
   # TODO: there is an issue with wharf, patches applied manually
   git clone https://github.com/atotto/clipboard.git && cd clipboard
-  git apply ../patches/zos.patch
+  git apply ../patches/zos.gopatch
   cd ..
 
   go work init ./glow ./clipboard
