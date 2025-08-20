@@ -88,6 +88,7 @@ zopen_wharf()
   cd ..
 
   git clone https://github.com/u-root/u-root.git
+  cd u-root
   git apply ../patches/u-root.gopatch
   cd ..
 
