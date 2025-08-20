@@ -1,10 +1,10 @@
 # Update bump details accordingly. Use bump check to confirm.
-# bump: glow-version /GLOW_VERSION="(.*)"/ https://github.com/charmbracelet/glow.git|semver:*
-GLOW_VERSION="2.1.0" # Specify a stable release
-# export ZOPEN_STABLE_TAG="v${GLOW_VERSION}"
+# bump: crush-version /CRUSH_VERSION="(.*)"/ https://github.com/charmbracelet/crush.git|semver:*
+CRUSH_VERSION="0.6.2" # Specify a stable release
+export ZOPEN_STABLE_TAG="v${CRUSH_VERSION}"
 
 ###
-### Build control file for the glow port
+### Build control file for the crush port
 ###
 
 ###
@@ -15,9 +15,9 @@ GLOW_VERSION="2.1.0" # Specify a stable release
 export ZOPEN_BUILD_LINE="STABLE"
 
 ## Required IF ZOPEN_BUILD_LINE='STABLE'
-export ZOPEN_STABLE_URL="https://github.com/charmbracelet/glow.git"
+export ZOPEN_STABLE_URL="https://github.com/charmbracelet/crush.git"
 export ZOPEN_STABLE_DEPS="make coreutils wharf" # Specify the stable build dependencies.
-export ZOPEN_STABLE_TAG="v${GLOW_VERSION}"
+export ZOPEN_STABLE_TAG="v${CRUSH_VERSION}"
 
 ## Required IF ZOPEN_BUILD_LINE='DEV'
 export ZOPEN_DEV_URL=""   # Specify the dev build URL
@@ -25,7 +25,7 @@ export ZOPEN_DEV_DEPS=""  # Specify the dev build dependencies
 
 ## Specify a space-delimited list of applicable categories.
 ## See tool_categories.txt for valid options
-export ZOPEN_CATEGORIES="documentation utilities"
+export ZOPEN_CATEGORIES="ai utilities"
 
 ## Runtime zopen tool dependencies to be installed alongside the tool.
 export ZOPEN_RUNTIME_DEPS=""
@@ -65,13 +65,40 @@ zopen_init()
 zopen_wharf()
 {
   cd ..
-  # TODO: there is an issue with wharf, patches applied manually
+  rm -rf go.work
+
   git clone https://github.com/atotto/clipboard.git && cd clipboard
   git apply ../patches/zos.gopatch
   cd ..
 
-  go work init ./glow ./clipboard
-  cd ./glow
+  git clone https://github.com/charmbracelet/ultraviolet.git
+  cd ultraviolet
+  git apply ../patches/ultraviolet.gopatch
+  cd ..
+
+  git clone https://github.com/ncruces/go-sqlite3.git
+  cd go-sqlite3
+  git apply ../patches/go-sqlite3.gopatch
+  cd ..
+
+  #rm -rf bubbletea
+  git clone https://github.com/charmbracelet/bubbletea.git -b v2-exp
+  cd ./bubbletea
+  git apply ../patches/bubbletea.gopatch
+  cd ..
+
+  git clone https://github.com/u-root/u-root.git
+  git apply ../patches/u-root.gopatch
+  cd ..
+  #git apply ../bubbletea-patches/tea.go.patch
+  #cd ..
+#  git clone git clone https://github.com/u-root/u-root.git && cd u-root && cd -
+  # git apply
+
+  go work init ./go-sqlite3 ./bubbletea ./u-root ./clipboard ./ultraviolet ./crush 
+  wharf ./crush/...
+  cd ./crush
+  go mod tidy
 }
 
 ###
@@ -94,14 +121,14 @@ zopen_check_results()
 zopen_install()
 {
   mkdir -p $ZOPEN_INSTALL_DIR/bin
-  cp  ./glow $ZOPEN_INSTALL_DIR/bin/
+  cp  ./crush $ZOPEN_INSTALL_DIR/bin/
 }
 
 zopen_get_version()
 {
   # Modify to echo the version of your tool/library
   # Rather than hardcoding the version, obtain the version by running the tool/library
-  echo "${GLOW_VERSION}"
+  echo "${CRUSH_VERSION}"
 }
 
 

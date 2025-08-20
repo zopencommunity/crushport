@@ -1,0 +1,102 @@
+diff --git i/terminal_reader.go w/terminal_reader.go
+index 9141597..bc4f378 100644
+--- i/terminal_reader.go
++++ w/terminal_reader.go
+@@ -70,6 +70,9 @@ type TerminalReader struct {
+ 	lastWinsizeX, lastWinsizeY int16 // the last window size for the previous event to prevent multiple size events from firing
+ 
+ 	logger Logger // The logger to use for debugging.
++
++	cancelCtx context.Context
++	cancel    context.CancelFunc
+ }
+ 
+ // NewTerminalReader returns a new input event reader. The reader streams input
+@@ -101,6 +104,47 @@ func NewTerminalReader(r io.Reader, termType string) *TerminalReader {
+ 	return d
+ }
+ 
++// Start prepares the reader for event processing.
++func (d *TerminalReader) Start() error {
++	if d.r == nil {
++		return ErrReaderNotStarted
++	}
++	if d.cancel != nil {
++		return errors.New("reader already started")
++	}
++	return nil
++}
++
++// Close cancels and closes the reader.
++func (d *TerminalReader) Close() error {
++	d.Cancel()
++	if c, ok := d.r.(io.Closer); ok {
++		return c.Close()
++	}
++	return nil
++}
++
++// Cancel stops the event processing.
++func (d *TerminalReader) Cancel() {
++	if d.cancel != nil {
++		d.cancel()
++		d.cancel = nil
++	}
++}
++
++// ReceiveEvents starts the event stream and blocks until the context is cancelled
++// or an error occurs. This is a wrapper around the existing StreamEvents method.
++func (d *TerminalReader) ReceiveEvents(ctx context.Context, eventc chan<- Event) error {
++	if d.r == nil {
++		return ErrReaderNotStarted
++	}
++
++	d.cancelCtx, d.cancel = context.WithCancel(ctx)
++	defer d.Cancel() // Ensure cleanup on exit
++
++	return d.StreamEvents(d.cancelCtx, eventc)
++}
++
+ // readBufSize is the size of the read buffer used to read input events at a time.
+ const readBufSize = 4096
+ 
+@@ -422,3 +466,4 @@ func (d *TerminalReader) logf(format string, v ...interface{}) {
+ 	}
+ 	d.logger.Printf(format, v...)
+ }
++
+diff --git i/winch_other.go w/winch_other.go
+index 893f1e3..7e17631 100644
+--- i/winch_other.go
++++ w/winch_other.go
+@@ -1,5 +1,5 @@
+-//go:build !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris
+-// +build !darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris
++//go:build !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris && !zos
++// +build !darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!zos
+ 
+ package uv
+ 
+diff --git i/winch_unix.go w/winch_unix.go
+index ddc3006..c67ae85 100644
+--- i/winch_unix.go
++++ w/winch_unix.go
+@@ -8,7 +8,7 @@ import (
+ 	"syscall"
+ 
+ 	"github.com/charmbracelet/x/term"
+-	"github.com/charmbracelet/x/termios"
++	"golang.org/x/sys/unix"
+ )
+ 
+ func (n *WindowSizeNotifier) start() error {
+@@ -33,7 +33,8 @@ func (n *WindowSizeNotifier) getWindowSize() (cells Size, pixels Size, err error
+ 	n.m.Lock()
+ 	defer n.m.Unlock()
+ 
+-	winsize, err := termios.GetWinsize(int(n.f.Fd()))
++
++	winsize, err := unix.IoctlGetWinsize(int(n.f.Fd()), unix.TIOCGWINSZ); //termios.GetWinsize(int(n.f.Fd()))
+ 	if err != nil {
+ 		return Size{}, Size{}, err //nolint:wrapcheck
+ 	}

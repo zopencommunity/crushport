@@ -1,0 +1,44 @@
+diff --git i/pkg/ls/fileinfo_unix.go w/pkg/ls/fileinfo_unix.go
+index 3a872a03..478245ec 100644
+--- i/pkg/ls/fileinfo_unix.go
++++ w/pkg/ls/fileinfo_unix.go
+@@ -27,10 +27,7 @@ type FileInfo struct {
+ 	Size          int64
+ 	BlkSize       int64
+ 	Blocks        int64
+-	ATime         time.Time
+ 	MTime         time.Time
+-	CTime         time.Time
+-	BirthTime     time.Time
+ 	SymlinkTarget string
+ 	Dev           uint64
+ 	Ino           uint64
+@@ -45,14 +42,14 @@ func FromOSFileInfo(path string, fi os.FileInfo) FileInfo {
+ 	// in sys not being the right type.
+ 	// This turns out to be surprisingly messy to test.
+ 	uID, gID, rdev := uint32(math.MaxUint32), uint32(math.MaxUint32), uint64(math.MaxUint64)
+-	var aTime, cTime, birthTime time.Time
++	//var aTime, cTime, birthTime time.Time
+ 	var dev, ino, nLink uint64
+ 	var blkSize, blocks int64
+ 	if s, ok := fi.Sys().(*syscall.Stat_t); ok {
+ 		uID, gID, rdev = s.Uid, s.Gid, uint64(s.Rdev)
+-		aTime = time.Unix(int64(s.Atimespec.Sec), int64(s.Atimespec.Nsec))
+-		cTime = time.Unix(int64(s.Ctimespec.Sec), int64(s.Ctimespec.Nsec))
+-		birthTime = time.Unix(int64(s.Birthtimespec.Sec), int64(s.Birthtimespec.Nsec))
++	//	aTime = time.Unix(int64(s.Atimespec.Sec), int64(0))
++	//	cTime = time.Unix(int64(s.Ctimespec.Sec), int64(0))
++	//	birthTime = time.Unix(int64(s.Birthtimespec.Sec), int64(0))
+ 		dev = uint64(s.Dev)
+ 		ino = s.Ino
+ 		nLink = uint64(s.Nlink)
+@@ -78,9 +75,6 @@ func FromOSFileInfo(path string, fi os.FileInfo) FileInfo {
+ 		BlkSize:       blkSize,
+ 		Blocks:        blocks,
+ 		MTime:         fi.ModTime(),
+-		ATime:         aTime,
+-		CTime:         cTime,
+-		BirthTime:     birthTime,
+ 		SymlinkTarget: link,
+ 		Dev:           dev,
+ 		Ino:           ino,

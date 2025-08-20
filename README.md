@@ -1,6 +1,6 @@
-[![Automatic version updates](https://github.com/zopencommunity/glowport/actions/workflows/bump.yml/badge.svg)](https://github.com/zopencommunity/glowport/actions/workflows/bump.yml)
+[![Automatic version updates](https://github.com/zopencommunity/crushport/actions/workflows/bump.yml/badge.svg)](https://github.com/zopencommunity/crushport/actions/workflows/bump.yml)
 
-# glow
+# crush
 
 Render markdown on the CLI
 
@@ -8,15 +8,15 @@ Render markdown on the CLI
 
 Use the zopen package manager ([QuickStart Guide](https://zopen.community/#/Guides/QuickStart)) to install:
 ```bash
-zopen install glow
+zopen install crush
 ```
 
 # Building from Source
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/zopencommunity/glowport.git
-cd glowport
+git clone https://github.com/zopencommunity/crushport.git
+cd crushport
 ```
 2. Build using zopen:
 ```bash

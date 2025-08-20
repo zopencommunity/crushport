@@ -1,0 +1,136 @@
+diff --git i/internal/alloc/alloc_other.go w/internal/alloc/alloc_other.go
+index b420acc..9c2d477 100644
+--- i/internal/alloc/alloc_other.go
++++ w/internal/alloc/alloc_other.go
+@@ -1,4 +1,4 @@
+-//go:build !unix && !windows
++//go:build !unix && !windows && !zos
+ 
+ package alloc
+ 
+diff --git i/internal/alloc/alloc_unix.go w/internal/alloc/alloc_unix.go
+index a00dbbf..fa30b57 100644
+--- i/internal/alloc/alloc_unix.go
++++ w/internal/alloc/alloc_unix.go
+@@ -1,67 +1,38 @@
+-//go:build unix
++//go:build zos
+ 
+ package alloc
+ 
+-import (
+-	"math"
+-
+-	"github.com/tetratelabs/wazero/experimental"
+-	"golang.org/x/sys/unix"
+-)
++import "github.com/tetratelabs/wazero/experimental"
+ 
+ func NewMemory(_, max uint64) experimental.LinearMemory {
+-	// Round up to the page size.
+-	rnd := uint64(unix.Getpagesize() - 1)
+-	max = (max + rnd) &^ rnd
+-
+-	if max > math.MaxInt {
+-		// This ensures int(max) overflows to a negative value,
+-		// and unix.Mmap returns EINVAL.
+-		max = math.MaxUint64
+-	}
+-
+-	// Reserve max bytes of address space, to ensure we won't need to move it.
+-	// A protected, private, anonymous mapping should not commit memory.
+-	b, err := unix.Mmap(-1, 0, int(max), unix.PROT_NONE, unix.MAP_PRIVATE|unix.MAP_ANON)
+-	if err != nil {
+-		panic(err)
+-	}
+-	return &mmappedMemory{buf: b[:0]}
++    return &sliceMemory{
++        buf: make([]byte, 0),
++        cap: int(max),
++    }
+ }
+ 
+-// The slice covers the entire mmapped memory:
+-//   - len(buf) is the already committed memory,
+-//   - cap(buf) is the reserved address space.
+-type mmappedMemory struct {
+-	buf []byte
++type sliceMemory struct {
++    buf []byte
++    cap int
+ }
+ 
+-func (m *mmappedMemory) Reallocate(size uint64) []byte {
+-	com := uint64(len(m.buf))
+-	res := uint64(cap(m.buf))
+-	if com < size && size <= res {
+-		// Round up to the page size.
+-		rnd := uint64(unix.Getpagesize() - 1)
+-		new := (size + rnd) &^ rnd
++func (m *sliceMemory) Reallocate(size uint64) []byte {
++    if int(size) > m.cap {
++        // over the reserved maximum
++        return nil
++    }
+ 
+-		// Commit additional memory up to new bytes.
+-		err := unix.Mprotect(m.buf[com:new], unix.PROT_READ|unix.PROT_WRITE)
+-		if err != nil {
+-			return nil
+-		}
++    if len(m.buf) < int(size) {
++        // Only grow as needed, not to max
++        newBuf := make([]byte, size)
++        copy(newBuf, m.buf)
++        m.buf = newBuf
++    }
+ 
+-		// Update committed memory.
+-		m.buf = m.buf[:new]
+-	}
+-	// Limit returned capacity because bytes beyond
+-	// len(m.buf) have not yet been committed.
+-	return m.buf[:size:len(m.buf)]
++    return m.buf[:size]
+ }
+ 
+-func (m *mmappedMemory) Free() {
+-	err := unix.Munmap(m.buf[:cap(m.buf)])
+-	if err != nil {
+-		panic(err)
+-	}
+-	m.buf = nil
++func (m *sliceMemory) Free() {
++    m.buf = nil // let GC reclaim it
+ }
++
+diff --git i/vfs/lock.go w/vfs/lock.go
+index b28d832..372dd3c 100644
+--- i/vfs/lock.go
++++ w/vfs/lock.go
+@@ -1,4 +1,4 @@
+-//go:build linux || darwin || windows || freebsd || openbsd || netbsd || dragonfly || illumos || sqlite3_flock || sqlite3_dotlk
++//go:build linux || darwin || windows || freebsd || openbsd || netbsd || dragonfly || illumos || sqlite3_flock || sqlite3_dotlk || zos
+ 
+ package vfs
+ 
+diff --git i/vfs/lock_other.go w/vfs/lock_other.go
+index 9bdfa3c..eefb507 100644
+--- i/vfs/lock_other.go
++++ w/vfs/lock_other.go
+@@ -1,4 +1,4 @@
+-//go:build !(linux || darwin || windows || freebsd || openbsd || netbsd || dragonfly || illumos || sqlite3_flock || sqlite3_dotlk)
++//go:build !(linux || darwin || windows || freebsd || openbsd || netbsd || dragonfly || illumos || sqlite3_flock || sqlite3_dotlk || zos)
+ 
+ package vfs
+ 
+diff --git i/vfs/os_bsd.go w/vfs/os_bsd.go
+index 4542f8e..646d48b 100644
+--- i/vfs/os_bsd.go
++++ w/vfs/os_bsd.go
+@@ -1,4 +1,4 @@
+-//go:build ((freebsd || openbsd || netbsd || dragonfly || illumos) && !sqlite3_dotlk) || sqlite3_flock
++//go:build ((freebsd || openbsd || netbsd || dragonfly || illumos || zos) && !sqlite3_dotlk) || sqlite3_flock
+ 
+ package vfs
+ 

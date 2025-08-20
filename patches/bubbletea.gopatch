@@ -1,0 +1,17 @@
+diff --git i/tea.go w/tea.go
+index 72b4d0e..bc4d062 100644
+--- i/tea.go
++++ w/tea.go
+@@ -1206,11 +1206,10 @@ func (p *Program) shutdown(kill bool) {
+ 		// Check if the cancel reader has been setup before waiting and closing.
+ 		if p.inputReader != nil {
+ 			// Wait for input loop to finish.
+-			if p.inputReader.Cancel() {
++			p.inputReader.Cancel()
+ 				if !kill {
+ 					p.waitForReadLoop()
+ 				}
+-			}
+ 			_ = p.inputReader.Close()
+ 		}
+ 
