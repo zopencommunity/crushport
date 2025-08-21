@@ -2,7 +2,7 @@
 
 # crush
 
-Render markdown on the CLI
+AI agent that runs on the terminal
 
 # Installation and Usage
 
