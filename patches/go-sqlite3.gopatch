@@ -1,6 +1,6 @@
-diff --git i/internal/alloc/alloc_other.go w/internal/alloc/alloc_other.go
+diff --git c/internal/alloc/alloc_other.go w/internal/alloc/alloc_other.go
 index b420acc..9c2d477 100644
---- i/internal/alloc/alloc_other.go
+--- c/internal/alloc/alloc_other.go
 +++ w/internal/alloc/alloc_other.go
 @@ -1,4 +1,4 @@
 -//go:build !unix && !windows
@@ -8,11 +8,11 @@ index b420acc..9c2d477 100644
  
  package alloc
  
-diff --git i/internal/alloc/alloc_unix.go w/internal/alloc/alloc_unix.go
-index a00dbbf..fa30b57 100644
---- i/internal/alloc/alloc_unix.go
+diff --git c/internal/alloc/alloc_unix.go w/internal/alloc/alloc_unix.go
+index 203d847..fa30b57 100644
+--- c/internal/alloc/alloc_unix.go
 +++ w/internal/alloc/alloc_unix.go
-@@ -1,67 +1,38 @@
+@@ -1,75 +1,38 @@
 -//go:build unix
 +//go:build zos
  
@@ -20,30 +20,38 @@ index a00dbbf..fa30b57 100644
  
 -import (
 -	"math"
--
++import "github.com/tetratelabs/wazero/experimental"
+ 
 -	"github.com/tetratelabs/wazero/experimental"
 -	"golang.org/x/sys/unix"
 -)
-+import "github.com/tetratelabs/wazero/experimental"
- 
- func NewMemory(_, max uint64) experimental.LinearMemory {
+-
+-func NewMemory(cap, max uint64) experimental.LinearMemory {
 -	// Round up to the page size.
 -	rnd := uint64(unix.Getpagesize() - 1)
--	max = (max + rnd) &^ rnd
+-	res := (max + rnd) &^ rnd
 -
--	if max > math.MaxInt {
--		// This ensures int(max) overflows to a negative value,
+-	if res > math.MaxInt {
+-		// This ensures int(res) overflows to a negative value,
 -		// and unix.Mmap returns EINVAL.
--		max = math.MaxUint64
+-		res = math.MaxUint64
 -	}
 -
--	// Reserve max bytes of address space, to ensure we won't need to move it.
+-	com := res
+-	prot := unix.PROT_READ | unix.PROT_WRITE
+-	if cap < max { // Commit memory only if cap=max.
+-		com = 0
+-		prot = unix.PROT_NONE
+-	}
+-
+-	// Reserve res bytes of address space, to ensure we won't need to move it.
 -	// A protected, private, anonymous mapping should not commit memory.
--	b, err := unix.Mmap(-1, 0, int(max), unix.PROT_NONE, unix.MAP_PRIVATE|unix.MAP_ANON)
+-	b, err := unix.Mmap(-1, 0, int(res), prot, unix.MAP_PRIVATE|unix.MAP_ANON)
 -	if err != nil {
 -		panic(err)
 -	}
--	return &mmappedMemory{buf: b[:0]}
+-	return &mmappedMemory{buf: b[:com]}
++func NewMemory(_, max uint64) experimental.LinearMemory {
 +    return &sliceMemory{
 +        buf: make([]byte, 0),
 +        cap: int(max),
@@ -64,9 +72,11 @@ index a00dbbf..fa30b57 100644
 -	com := uint64(len(m.buf))
 -	res := uint64(cap(m.buf))
 -	if com < size && size <= res {
--		// Round up to the page size.
+-		// Grow geometrically, round up to the page size.
 -		rnd := uint64(unix.Getpagesize() - 1)
--		new := (size + rnd) &^ rnd
+-		new := com + com>>3
+-		new = min(max(size, new), res)
+-		new = (new + rnd) &^ rnd
 +func (m *sliceMemory) Reallocate(size uint64) []byte {
 +    if int(size) > m.cap {
 +        // over the reserved maximum
@@ -85,8 +95,7 @@ index a00dbbf..fa30b57 100644
 +        m.buf = newBuf
 +    }
  
--		// Update committed memory.
--		m.buf = m.buf[:new]
+-		m.buf = m.buf[:new] // Update committed memory.
 -	}
 -	// Limit returned capacity because bytes beyond
 -	// len(m.buf) have not yet been committed.
@@ -104,9 +113,9 @@ index a00dbbf..fa30b57 100644
 +    m.buf = nil // let GC reclaim it
  }
 +
-diff --git i/vfs/lock.go w/vfs/lock.go
+diff --git c/vfs/lock.go w/vfs/lock.go
 index b28d832..372dd3c 100644
---- i/vfs/lock.go
+--- c/vfs/lock.go
 +++ w/vfs/lock.go
 @@ -1,4 +1,4 @@
 -//go:build linux || darwin || windows || freebsd || openbsd || netbsd || dragonfly || illumos || sqlite3_flock || sqlite3_dotlk
@@ -114,9 +123,9 @@ index b28d832..372dd3c 100644
  
  package vfs
  
-diff --git i/vfs/lock_other.go w/vfs/lock_other.go
+diff --git c/vfs/lock_other.go w/vfs/lock_other.go
 index 9bdfa3c..eefb507 100644
---- i/vfs/lock_other.go
+--- c/vfs/lock_other.go
 +++ w/vfs/lock_other.go
 @@ -1,4 +1,4 @@
 -//go:build !(linux || darwin || windows || freebsd || openbsd || netbsd || dragonfly || illumos || sqlite3_flock || sqlite3_dotlk)
@@ -124,9 +133,9 @@ index 9bdfa3c..eefb507 100644
  
  package vfs
  
-diff --git i/vfs/os_bsd.go w/vfs/os_bsd.go
+diff --git c/vfs/os_bsd.go w/vfs/os_bsd.go
 index 4542f8e..646d48b 100644
---- i/vfs/os_bsd.go
+--- c/vfs/os_bsd.go
 +++ w/vfs/os_bsd.go
 @@ -1,4 +1,4 @@
 -//go:build ((freebsd || openbsd || netbsd || dragonfly || illumos) && !sqlite3_dotlk) || sqlite3_flock

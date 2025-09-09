@@ -1,6 +1,6 @@
 # Update bump details accordingly. Use bump check to confirm.
 # bump: crush-version /CRUSH_VERSION="(.*)"/ https://github.com/charmbracelet/crush.git|semver:*
-CRUSH_VERSION="0.6.2" # Specify a stable release
+CRUSH_VERSION="0.7.7" # Specify a stable release
 export ZOPEN_STABLE_TAG="v${CRUSH_VERSION}"
 
 ###
@@ -67,26 +67,31 @@ zopen_wharf()
   cd ..
   rm -rf go.work
 
+  rm -rf clipboard
   git clone https://github.com/atotto/clipboard.git 
   cd clipboard
   git apply ../patches/zos.gopatch
   cd ..
 
+  rm -rf ultraviolet
   git clone https://github.com/charmbracelet/ultraviolet.git
   cd ultraviolet
   git apply ../patches/ultraviolet.gopatch
   cd ..
 
+  rm -rf go-sqlite3
   git clone https://github.com/ncruces/go-sqlite3.git
   cd go-sqlite3
   git apply ../patches/go-sqlite3.gopatch
   cd ..
 
+  rm -rf bubbletea
   git clone https://github.com/charmbracelet/bubbletea.git -b v2-exp
   cd ./bubbletea
   git apply ../patches/bubbletea.gopatch
   cd ..
 
+  rm -rf u-root
   git clone https://github.com/u-root/u-root.git
   cd u-root
   git apply ../patches/u-root.gopatch
