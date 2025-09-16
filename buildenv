@@ -1,6 +1,6 @@
 # Update bump details accordingly. Use bump check to confirm.
 # bump: crush-version /CRUSH_VERSION="(.*)"/ https://github.com/charmbracelet/crush.git|semver:*
-CRUSH_VERSION="0.8.1" # Specify a stable release
+CRUSH_VERSION="0.8.2" # Specify a stable release
 export ZOPEN_STABLE_TAG="v${CRUSH_VERSION}"
 
 ###
